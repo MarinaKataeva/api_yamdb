@@ -74,4 +74,3 @@ class Command(BaseCommand):
         except CommandError:
             raise CommandError('Ошибка при загрузке данных'
                                f'из файлов csv в каталоге {csv_dir}!')
-
