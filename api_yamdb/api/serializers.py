@@ -1,6 +1,8 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
 from reviews.models import User
+from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -15,9 +17,6 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def validate_username(self, username):
-        """
-        Проверка, что username не равен "me".
-        """
         if username in 'me':
             raise serializers.ValidationError(
                 'Запрещено использовать me в качестве имени пользователя'
@@ -30,27 +29,34 @@ class RegistrationSerializer(serializers.ModelSerializer):
     Сериализатор регистрации пользователя.
     """
 
+    email = serializers.EmailField(
+        max_length=254, required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())])
+
     class Meta:
         model = User
         fields = ('email', 'username')
-
-    def validate(self, data):
-        if data.get('username') == 'me':
-            raise serializers.ValidationError(
-                'Запрещено использовать me в качестве имени'
+        extra_kwargs = {
+            'email': {'required': True},
+            'username': {'required': True},
+        }
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=model.objects.all(),
+                fields=('email', 'username'),
+                message="Логин и email должны быть уникальными"
             )
-        if User.objects.filter(username=data.get('username')):
-            raise serializers.ValidationError(
-                'Пользователь с таким именем уже существует'
+        ]
+
+    def validate_username(self, username):
+        if username == 'me':
+            raise ValidationError(
+                'Запрещено использовать me в качестве имени пользователя'
             )
-        if User.objects.filter(email=data.get('email')):
-            raise serializers.ValidationError(
-                'Пользователь с таким email уже существует'
-            )
-        return data
+        return username
 
 
-class CustomSerializer(serializers.ModelSerializer):
+class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
@@ -60,7 +66,7 @@ class CustomSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
-class CustomUserTokenSerializer(serializers.ModelSerializer):
+class UserTokenSerializer(serializers.ModelSerializer):
     """
     Сериализатор для токена.
     """
