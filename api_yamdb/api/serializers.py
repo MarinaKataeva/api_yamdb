@@ -77,15 +77,23 @@ class CustomUserTokenSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     """ Сериализатор для категории произведения"""
     class Meta:
-        fields = ('name', 'slug')
         model = Category
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
 
 
 class GenreSerializer(serializers.ModelSerializer):
     """ Сериализатор для жанра произведения"""
     class Meta:
-        fields = ('name', 'slug')
         model = Genre
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
 
 
 class TitleSerializer(serializers.ModelSerializer):

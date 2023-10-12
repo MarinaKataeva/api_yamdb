@@ -9,11 +9,17 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from api.permissions import (
     IsAdminOnlyPermission,
     IsUserOnlyPermission,
+    IsAdminOrReadOnlyPermission,
 )
-from api.serializers import (CustomSerializer, UserSerializer,
-                             RegistrationSerializer, CustomUserTokenSerializer,
-                             CategorySerializer, GenreSerializer,
-                             TitleSerializer)
+from .serializers import (
+    CustomSerializer,
+    UserSerializer,
+    RegistrationSerializer,
+    CustomUserTokenSerializer,
+    CategorySerializer,
+    GenreSerializer,
+    TitleSerializer)
+from .mixins import CreateListDeleteViewSet
 from reviews.models import User, Category, Genre, Title
 
 
@@ -149,19 +155,23 @@ class TokenViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(CreateListDeleteViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
+    lookup_field = 'slug'
+    permission_classes = [IsAdminOrReadOnlyPermission,]
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(CreateListDeleteViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
+    lookup_field = 'slug'
+    permission_classes = [IsAdminOrReadOnlyPermission,]
 
 
 class TitleViewSet(viewsets.ModelViewSet):
