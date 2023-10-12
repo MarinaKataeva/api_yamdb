@@ -1,6 +1,6 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
-from reviews.models import User
+from reviews.models import User, Category, Genre, Title
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -72,3 +72,32 @@ class CustomUserTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'confirmation_code')
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """ Сериализатор для категории произведения"""
+    class Meta:
+        fields = ('name', 'slug')
+        model = Category
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    """ Сериализатор для жанра произведения"""
+    class Meta:
+        fields = ('name', 'slug')
+        model = Genre
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    """ Сериализатор для произведения"""
+    class Meta:
+        fields = (
+            'id',
+            'name',
+            'year',
+            'rating',
+            'description',
+            'genre',
+            'category'
+        )
+        model = Title

@@ -2,12 +2,16 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from api.permissions import (IsAdminOnlyPermission, IsUserOnlyPermission)
 from api.serializers import (CustomSerializer, UserSerializer,
-                             RegistrationSerializer, CustomUserTokenSerializer)
-from reviews.models import User
+                             RegistrationSerializer, CustomUserTokenSerializer,
+                             CategorySerializer, GenreSerializer,
+                             TitleSerializer)
+from reviews.models import User, Category, Genre, Title
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -140,3 +144,22 @@ class TokenViewSet(viewsets.ModelViewSet):
 
         return Response({'detail': 'Неверные данные'},
                         status=status.HTTP_400_BAD_REQUEST)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    # permission_classes = [IsAuthenticated,]
+
+
+class GenreViewSet(viewsets.ModelViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
