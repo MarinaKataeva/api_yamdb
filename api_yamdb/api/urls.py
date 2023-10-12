@@ -8,9 +8,9 @@ app_name = 'api'
 router = routers.DefaultRouter()
 
 router.register('users', UserViewSet, basename='users')
-router.register('auth/signup', SignUpViewSet, basename='sign-up')
+router.register('auth/signup', SignUpViewSet, basename='signup')
 router.register('auth/token', TokenViewSet, basename='token')
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('v1/', include(router.urls)),
 ]

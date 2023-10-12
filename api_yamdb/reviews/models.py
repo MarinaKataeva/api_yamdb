@@ -34,6 +34,9 @@ class User(AbstractUser):
         default='user',
     )
 
+    class Meta:
+        ordering = ['id']
+
     @property
     def is_admin(self):
         return self.is_staff or self.role == settings.ADMIN
