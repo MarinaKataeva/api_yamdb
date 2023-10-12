@@ -111,7 +111,9 @@ STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
 }
 
 SIMPLE_JWT = {
@@ -127,3 +129,5 @@ EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
 USER = 'user'
 MODERATOR = 'moderator'
 ADMIN = 'admin'
+
+AUTH_USER_MODEL = 'reviews.User'

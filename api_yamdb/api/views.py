@@ -6,7 +6,10 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from api.permissions import (IsAdminOnlyPermission, IsUserOnlyPermission)
+from api.permissions import (
+    IsAdminOnlyPermission,
+    IsUserOnlyPermission,
+)
 from api.serializers import (CustomSerializer, UserSerializer,
                              RegistrationSerializer, CustomUserTokenSerializer,
                              CategorySerializer, GenreSerializer,
@@ -152,12 +155,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
-    # permission_classes = [IsAuthenticated,]
 
 
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
