@@ -87,19 +87,17 @@ class Title(models.Model):
         blank=False
     )
     description = models.TextField()
-    genre = models.ManyToManyField(
-        Genre,
-        blank=False,
-        related_name='genre_titles'
-    )
     category = models.ForeignKey(
         Category,
-        blank=False,
         on_delete=models.CASCADE,
         related_name='category_titles'
     )
-    rating = models.FloatField(
-        blank=False,
+    genre = models.ManyToManyField(
+        Genre,
+        related_name='genre_titles',
+        through='GenreTitle'
+    )
+    rating = models.IntegerField(
         default=0
     )
 

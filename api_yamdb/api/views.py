@@ -1,4 +1,5 @@
 from django.core.mail import send_mail
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -18,7 +19,9 @@ from .serializers import (
     CustomUserTokenSerializer,
     CategorySerializer,
     GenreSerializer,
-    TitleSerializer)
+    TitleSerializer,
+    TitlePostPatchSerializer
+)
 from .mixins import CreateListDeleteViewSet
 from reviews.models import User, Category, Genre, Title
 
@@ -176,6 +179,12 @@ class GenreViewSet(CreateListDeleteViewSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    serializer_class = TitleSerializer
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('cetagory', 'genre', 'name', 'year')
+    pagination_class = LimitOffsetPagination
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('category__slug', 'genre__slug', 'name', 'year')
+    permission_classes = [IsAdminOrReadOnlyPermission,]
+
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PATCH']:
+            return TitlePostPatchSerializer
+        return TitleSerializer

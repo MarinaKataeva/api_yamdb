@@ -1,7 +1,7 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from reviews.models import User, Category, Genre, Title, GenreTitle
+from reviews.models import User, Category, Genre, Title
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -99,10 +99,11 @@ class GenreSerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
     """ Сериализатор для произведения"""
-    genre = GenreSerializer(read_only=True, many=True)
     category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True, read_only=True)
 
     class Meta:
+        model = Title
         fields = (
             'id',
             'name',
@@ -112,36 +113,27 @@ class TitleSerializer(serializers.ModelSerializer):
             'genre',
             'category'
         )
-        model = Title
 
-    def validate(self, data):
-        print('Start data validation...')
-        print(f'Data = {data}')
-        if 'name' not in data:
-            raise serializers.ValidationError(
-                'Не указано наименование произведения'
-            )
-        if 'year' not in data:
-            raise serializers.ValidationError(
-                'Не указан год выпуска произведения'
-            )
-        if 'genre' not in data:
-            raise serializers.ValidationError(
-                'Не указан жанр произведения'
-            )
-        if 'category' not in data:
-            raise serializers.ValidationError(
-                'Не указана категория произведения'
-            )
-        return data
+
+class TitlePostPatchSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Title
+        fields = (
+            'id',
+            'name',
+            'year',
+            'description',
+            'genre',
+            'category'
+        )
 
     def create(self, validated_data):
-        # name year genre category
-        print(f'Validated data = f{validated_data}')
-        genres = validated_data.pop('genre')
-        title = Title.objects.create(**validated_data)
-        for genre in genres:
-            current_genre = get_object_or_404(Genre, name=genre)
-            GenreTitle.objects.create(
-                genre=current_genre, title=title)
+        category = get_object_or_404(
+            Category,
+            slug=self.initial_data['category']
+        )
+        title = Title.objects.create(**validated_data, category=category)
         return title
