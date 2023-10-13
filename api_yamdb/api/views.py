@@ -177,3 +177,5 @@ class GenreViewSet(CreateListDeleteViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('cetagory', 'genre', 'name', 'year')

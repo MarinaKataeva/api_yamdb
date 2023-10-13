@@ -89,13 +89,14 @@ class Title(models.Model):
     description = models.TextField()
     genre = models.ManyToManyField(
         Genre,
-        blank=False
+        blank=False,
+        related_name='genre_titles'
     )
     category = models.ForeignKey(
         Category,
         blank=False,
         on_delete=models.CASCADE,
-        related_name='titles'
+        related_name='category_titles'
     )
     rating = models.FloatField(
         blank=False,
@@ -104,3 +105,11 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.genre} {self.title}'
