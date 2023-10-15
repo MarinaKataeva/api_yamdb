@@ -179,11 +179,8 @@ class GenreViewSet(CreateListDeleteViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    # queryset = Title.objects.all()
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
-    # filterset_fields = ('name', 'year',)
-    # search_fields = ('category__slug',)
     permission_classes = [IsAdminOrReadOnlyPermission,]
 
     def get_serializer_class(self):

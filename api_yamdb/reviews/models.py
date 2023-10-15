@@ -111,3 +111,11 @@ class GenreTitle(models.Model):
 
     def __str__(self):
         return f'{self.genre} {self.title}'
+
+
+class Review(models.Model):
+    pass
+
+
+class Comment(models.Model):
+    pass
