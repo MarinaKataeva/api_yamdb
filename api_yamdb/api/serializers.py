@@ -1,7 +1,7 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from reviews.models import User, Category, Genre, Title
+from reviews.models import User, Category, Genre, Title, GenreTitle
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -98,9 +98,10 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    """ Сериализатор для произведения"""
+    """ Сериализатор для чтения произведения"""
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Title
@@ -113,6 +114,15 @@ class TitleSerializer(serializers.ModelSerializer):
             'genre',
             'category'
         )
+
+    def get_rating(self, obj):
+        """ Получаем rating, необходимо описание модели Review """
+        # if obj.reviews.count() > 0:
+        #    rating = obj.reviews.aggregate(Avg("score"))
+        # else:
+        #    rating = None
+        rating = None
+        return rating
 
 
 class TitlePostPatchSerializer(serializers.ModelSerializer):
@@ -130,10 +140,25 @@ class TitlePostPatchSerializer(serializers.ModelSerializer):
             'category'
         )
 
-    def create(self, validated_data):
+    def validate(self, data):
+        """ Приводим данные к нужному формату для записи """
         category = get_object_or_404(
             Category,
             slug=self.initial_data['category']
         )
-        title = Title.objects.create(**validated_data, category=category)
+        data['category'] = category
+        initial_genres = self.initial_data.getlist('genre')
+        genre = []
+        for initial_genre in initial_genres:
+            genre.append(get_object_or_404(Genre, slug=initial_genre))
+        data['genre'] = genre
+        return data
+
+    def create(self, validated_data):
+        """ Создает запись в БД о произведении"""
+        genres = validated_data.pop('genre')
+        title = Title.objects.create(**validated_data)
+        for genre in genres:
+            GenreTitle.objects.create(
+                genre=genre, title=title)
         return title

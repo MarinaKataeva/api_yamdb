@@ -3,6 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -178,13 +179,34 @@ class GenreViewSet(CreateListDeleteViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    # queryset = Title.objects.all()
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('category__slug', 'genre__slug', 'name', 'year')
+    # filterset_fields = ('name', 'year',)
+    # search_fields = ('category__slug',)
     permission_classes = [IsAdminOrReadOnlyPermission,]
 
     def get_serializer_class(self):
+        if self.request.method == 'PUT':
+            raise MethodNotAllowed(self.request.method)
         if self.request.method in ['POST', 'PATCH']:
             return TitlePostPatchSerializer
         return TitleSerializer
+
+    def get_queryset(self):
+        genre_slug = self.request.query_params.get('genre')
+        category_slug = self.request.query_params.get('category')
+        year = self.request.query_params.get('year')
+        name = self.request.query_params.get('name')
+        if genre_slug:
+            genre = get_object_or_404(Genre, slug=genre_slug)
+            return genre.genre_titles.all()
+        if category_slug:
+            category = get_object_or_404(Category, slug=category_slug)
+            return category.category_titles.all()
+        if year:
+            return Title.objects.filter(year=year)
+        if name:
+            return Title.objects.filter(name=name)
+        else:
+            return Title.objects.all()
