@@ -35,9 +35,6 @@ class User(AbstractUser):
         default='user',
     )
 
-    class Meta:
-        ordering = ['id']
-
     @property
     def is_admin(self):
         return self.is_staff or self.role == settings.ADMIN
@@ -47,16 +44,74 @@ class User(AbstractUser):
         return self.role == settings.MODERATOR
 
 
-class Title(models.Model):
-    pass
-
-
 class Category(models.Model):
-    pass
+    """ Модель категории произведения"""
+    name = models.CharField(
+        blank=False,
+        default='Category',
+        max_length=256
+    )
+    slug = models.SlugField(
+        blank=False,
+        max_length=50,
+        unique=True
+    )
+
+    def __str__(self):
+        return self.name
 
 
 class Genre(models.Model):
-    pass
+    """ Модель жанра произведения"""
+    name = models.CharField(
+        blank=False,
+        default='Genre',
+        max_length=256
+    )
+    slug = models.SlugField(
+        blank=False,
+        max_length=50,
+        unique=True
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class Title(models.Model):
+    """ Модель произведения"""
+    name = models.CharField(
+        blank=False,
+        max_length=256
+    )
+    year = models.IntegerField(
+        blank=False
+    )
+    description = models.TextField()
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name='category_titles'
+    )
+    genre = models.ManyToManyField(
+        Genre,
+        related_name='genre_titles',
+        through='GenreTitle'
+    )
+    rating = models.IntegerField(
+        default=0
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.genre} {self.title}'
 
 
 class Reviews(models.Model):
@@ -79,6 +134,8 @@ class Reviews(models.Model):
     )
     text = models.CharField(
         max_length=400,
+        null=False,
+        blank=False,
         verbose_name='Текст отзыва',
         help_text='Введите текст отзыва (необязательно).'
     )
@@ -118,6 +175,8 @@ class Comments(models.Model):
     )
     text = models.CharField(
         max_length=150,
+        null=False,
+        blank=False,
         verbose_name='Текст комментария',
         help_text='Введите текст комментария',
     )

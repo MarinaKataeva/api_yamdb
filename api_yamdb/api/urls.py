@@ -2,7 +2,8 @@ from django.urls import include, path
 from rest_framework import routers
 
 from .views import (CommentsViewSet, ReviewsViewSet,
-                    SignUpViewSet, TokenViewSet, UserViewSet)
+                    SignUpViewSet, TokenViewSet, UserViewSet,
+                    TitleViewSet, CategoryViewSet, GenreViewSet)
 
 app_name = 'api'
 
@@ -20,6 +21,18 @@ router_v1.register(
     prefix='auth/token',
     viewset=TokenViewSet,
     basename='token')
+router_v1.register(
+    prefix='categories',
+    viewset=CategoryViewSet,
+    basename='categories')
+router_v1.register(
+    prefix='genres',
+    viewset=GenreViewSet,
+    basename='genres')
+router_v1.register(
+    prefix='titles',
+    viewset=TitleViewSet,
+    basename='titles')
 router_v1.register(
     prefix=r'titles/(?P<title_id>\d+)/reviews',
     viewset=ReviewsViewSet,
