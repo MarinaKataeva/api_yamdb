@@ -1,11 +1,19 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.exceptions import ValidationError
-from rest_framework import serializers
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
 
-from reviews.models import (Comments, Reviews, User, Title, Genre, Category,
-                            GenreTitle)
+
+from reviews.models import (Category,
+                            Comment,
+                            Genre,
+                            GenreTitle,
+                            Review,
+                            Title,
+                            User)
+
+MIN_SCORE = 1
+MAX_SCORE = 10
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -120,13 +128,8 @@ class TitleSerializer(serializers.ModelSerializer):
         )
 
     def get_rating(self, obj):
-        """ Получаем rating, необходимо описание модели Review """
-        # if obj.reviews.count() > 0:
-        #    rating = obj.reviews.aggregate(Avg("score"))
-        # else:
-        #    rating = None
-        rating = None
-        return rating
+        rating = obj.reviews.aggregate(Avg('score'))['score__avg']
+        return round(rating, 2) if rating else None
 
 
 class TitlePostPatchSerializer(serializers.ModelSerializer):
@@ -168,7 +171,7 @@ class TitlePostPatchSerializer(serializers.ModelSerializer):
         return title
 
 
-class ReviewsSerializer(serializers.ModelSerializer):
+class ReviewSerializer(serializers.ModelSerializer):
     """Сериализатор отзывов"""
     title = serializers.SlugRelatedField(
         slug_field='name',
@@ -178,18 +181,29 @@ class ReviewsSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
+    score = serializers.IntegerField(
+        min_value=MIN_SCORE,
+        max_value=MAX_SCORE)
 
     class Meta:
-        model = Reviews
+        model = Review
         fields = '__all__'
 
-    def validate_score(self, star):
-        if not 1 <= star <= 10:
-            raise ValidationError('Допустимое значение от 1 до 10')
-        return star
+    def validate(self, data):
+        request = self.context['request']
+        author = request.user
+        title_id = self.context.get('view').kwargs.get('title_id')
+        if request.method == 'POST':
+            existing_review = Review.objects.filter(
+                title=title_id,
+                author=author).first()
+            if existing_review:
+                raise serializers.ValidationError(
+                    'Можно оставить только один отзыв!')
+        return data
 
 
-class CommentsSerializer(serializers.ModelSerializer):
+class CommentSerializer(serializers.ModelSerializer):
     """Сериализатор комментариев"""
     review = serializers.SlugRelatedField(
         slug_field='text',
@@ -201,5 +215,5 @@ class CommentsSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Comments
+        model = Comment
         fields = '__all__'
