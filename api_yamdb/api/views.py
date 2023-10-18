@@ -38,7 +38,9 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = (IsAdminOnlyPermission,)
+    pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
     lookup_field = 'username'
@@ -59,11 +61,12 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(
-        methods=['patch'],
+        methods=['get', 'patch'],
         detail=False,
         url_path='me',
         permission_classes=(IsUserOnlyPermission,)
     )
+
     def update_my_profile(self, request):
         """
         Обновление профиля текущего пользователя.
@@ -71,6 +74,16 @@ class UserViewSet(viewsets.ModelViewSet):
 
         user = get_object_or_404(User, username=request.user)
         serializer = CustomSerializer(user, data=request.data, partial=True)
+
+    def me_user(self, request):
+        if request.method == 'GET':
+            user = User.objects.get(username=request.user)
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+
+        user = User.objects.get(username=request.user)
+        serializer = RoleSerializer(user, data=request.data, partial=True)
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -84,6 +97,7 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     как при регистрации, так и при повторном валидном обращении.
     """
     permission_classes = (permissions.AllowAny,)
+
 
     @action(
         methods=['post'],
@@ -139,6 +153,34 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             fail_silently=False,
         )
 
+    def create(self, request):
+        username = request.data.get('username')
+        email = request.data.get('email')
+
+        user_exists = User.objects.filter(username=username, email=email)
+        if user_exists:
+            user = User.objects.get(username=username)
+            serializer = RegistrationSerializer(user, data=request.data)
+        else:
+            serializer = RegistrationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            user = User.objects.get(username=username)
+            code = user.confirmation_code
+            send_mail(
+                f'{user.username}, Вас приветствует команда YaMDb! ',
+                f'Это Ваш уникальный код: {code} '
+                f'Перейдите по адресу api/v1/auth/token/'
+                f'для получения токена',
+                'yamdb@yyamdb.ru',
+                [email],
+                fail_silently=False,
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class TokenViewSet(viewsets.ModelViewSet):
     """
@@ -153,7 +195,12 @@ class TokenViewSet(viewsets.ModelViewSet):
             username = serializer.validated_data['username']
             confirmation_code = serializer.validated_data['confirmation_code']
             user = get_object_or_404(User, username=username)
-
+    def create(self, request):
+        serializer = UserTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            username = request.data.get('username')
+            confirmation_code = request.data.get('confirmation_code')
+            user = get_object_or_404(User, username=username)
             if str(user.confirmation_code) == confirmation_code:
                 refresh = RefreshToken.for_user(user)
                 token = {'token': str(refresh.access_token)}
@@ -256,3 +303,8 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         review = self.get_review()
         serializer.save(author=self.request.user, review=review)
+
+        return Response(
+            'Проверьте confirmation_code', status=status.HTTP_400_BAD_REQUEST
+        )
+

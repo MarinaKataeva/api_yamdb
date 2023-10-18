@@ -2,6 +2,8 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 
 
 from reviews.models import (Category,
@@ -14,6 +16,7 @@ from reviews.models import (Category,
 
 MIN_SCORE = 1
 MAX_SCORE = 10
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -64,6 +67,34 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class CustomSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        max_length=254, required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())])
+
+    class Meta:
+        model = User
+        fields = ('email', 'username')
+        extra_kwargs = {
+            'email': {'required': True},
+            'username': {'required': True},
+        }
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=model.objects.all(),
+                fields=('email', 'username'),
+                message="Логин и email должны быть уникальными"
+            )
+        ]
+
+    def validate_username(self, username):
+        if username == 'me':
+            raise ValidationError(
+                'Запрещено использовать me в качестве имени пользователя'
+            )
+        return username
+
+
+class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
@@ -73,7 +104,7 @@ class CustomSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
-class CustomUserTokenSerializer(serializers.ModelSerializer):
+class UserTokenSerializer(serializers.ModelSerializer):
     """
     Сериализатор для токена.
     """
@@ -217,3 +248,4 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
+
