@@ -123,7 +123,7 @@ class CategoryViewSet(CreateListDeleteViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-    permission_classes = [IsAdminOrReadOnlyPermission,]
+    permission_classes = [IsAdminOrReadOnlyPermission, ]
 
 
 class GenreViewSet(CreateListDeleteViewSet):
@@ -132,13 +132,13 @@ class GenreViewSet(CreateListDeleteViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-    permission_classes = [IsAdminOrReadOnlyPermission,]
+    permission_classes = [IsAdminOrReadOnlyPermission, ]
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
-    permission_classes = [IsAdminOrReadOnlyPermission,]
+    permission_classes = [IsAdminOrReadOnlyPermission, ]
 
     def get_serializer_class(self):
         if self.request.method == 'PUT':
@@ -169,11 +169,11 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет на отзывы"""
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthorModeratorAdminOrReadOnlyPermission,]
+    permission_classes = [IsAuthorModeratorAdminOrReadOnlyPermission, ]
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
-    search_fields = ['text',]
-    filter_fields = ['score',]
+    search_fields = ['text', ]
+    filter_fields = ['score', ]
     lookup_field = 'pk'
     http_method_names = ['get', 'post', 'patch', 'delete']
 
@@ -190,11 +190,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет на комментарии"""
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthorModeratorAdminOrReadOnlyPermission,]
+    permission_classes = [IsAuthorModeratorAdminOrReadOnlyPermission, ]
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
-    search_fields = ['text',]
-    filter_fields = ['author__username',]
+    search_fields = ['text', ]
+    filter_fields = ['author__username', ]
     lookup_field = 'pk'
     http_method_names = ['get', 'post', 'patch', 'delete']
 

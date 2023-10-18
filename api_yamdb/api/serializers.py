@@ -17,7 +17,6 @@ MIN_SCORE = 1
 MAX_SCORE = 10
 
 
-
 class UserSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели User.
@@ -224,4 +223,3 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
-
