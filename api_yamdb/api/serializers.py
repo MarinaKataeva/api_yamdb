@@ -5,7 +5,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
-
 from reviews.models import (Category,
                             Comment,
                             Genre,
@@ -16,6 +15,7 @@ from reviews.models import (Category,
 
 MIN_SCORE = 1
 MAX_SCORE = 10
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -224,3 +224,4 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
+

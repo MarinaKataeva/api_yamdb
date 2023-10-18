@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django_filters',
     'api',
     'reviews',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -119,7 +120,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10
-
 }
 
 SIMPLE_JWT = {
@@ -135,3 +135,5 @@ EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
 USER = 'user'
 MODERATOR = 'moderator'
 ADMIN = 'admin'
+
+AUTH_USER_MODEL = 'reviews.User'
