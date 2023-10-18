@@ -18,7 +18,6 @@ MIN_SCORE = 1
 MAX_SCORE = 10
 
 
-
 class UserSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели User.
@@ -31,9 +30,6 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def validate_username(self, username):
-        """
-        Проверка, что username не равен "me".
-        """
         if username in 'me':
             raise serializers.ValidationError(
                 'Запрещено использовать me в качестве имени пользователя'
@@ -46,27 +42,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
     Сериализатор регистрации пользователя.
     """
 
-    class Meta:
-        model = User
-        fields = ('email', 'username')
-
-    def validate(self, data):
-        if data.get('username') == 'me':
-            raise serializers.ValidationError(
-                'Запрещено использовать me в качестве имени'
-            )
-        if User.objects.filter(username=data.get('username')):
-            raise serializers.ValidationError(
-                'Пользователь с таким именем уже существует'
-            )
-        if User.objects.filter(email=data.get('email')):
-            raise serializers.ValidationError(
-                'Пользователь с таким email уже существует'
-            )
-        return data
-
-
-class CustomSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         max_length=254, required=True,
         validators=[UniqueValidator(queryset=User.objects.all())])
@@ -159,6 +134,7 @@ class TitleSerializer(serializers.ModelSerializer):
         )
 
     def get_rating(self, obj):
+        """ Получаем rating, необходимо описание модели Review """
         rating = obj.reviews.aggregate(Avg('score'))['score__avg']
         return round(rating, 2) if rating else None
 
@@ -248,4 +224,3 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
-
