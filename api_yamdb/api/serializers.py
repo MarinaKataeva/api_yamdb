@@ -1,8 +1,6 @@
-from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
 from reviews.models import (Category,
@@ -28,13 +26,6 @@ class UserSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
 
-    def validate_username(self, username):
-        if username in 'me':
-            raise serializers.ValidationError(
-                'Запрещено использовать me в качестве имени пользователя'
-            )
-        return username
-
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """
@@ -47,25 +38,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username')
+        fields = ('username', 'email')
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
         }
-        validators = [
-            serializers.UniqueTogetherValidator(
-                queryset=model.objects.all(),
-                fields=('email', 'username'),
-                message="Логин и email должны быть уникальными"
-            )
-        ]
-
-    def validate_username(self, username):
-        if username == 'me':
-            raise ValidationError(
-                'Запрещено использовать me в качестве имени пользователя'
-            )
-        return username
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -83,7 +60,7 @@ class UserTokenSerializer(serializers.ModelSerializer):
     Сериализатор для токена.
     """
     username = serializers.CharField(
-        max_length=50, validators=[UnicodeUsernameValidator, ]
+        max_length=50
     )
     confirmation_code = serializers.CharField()
 

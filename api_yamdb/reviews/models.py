@@ -1,15 +1,25 @@
 import uuid
 
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 from django.db import models
+
+USER = 'user'
+MODERATOR = 'moderator'
+ADMIN = 'admin'
 
 CHOICES = (
     ('user', 'Пользователь'),
     ('moderator', 'Модератор'),
     ('admin', 'Администратор'),
 )
+
+
+def validate_exclude_me(value):
+    if value.lower() == "me":
+        raise ValidationError('Нельзя использовать "me" в качестве имени.')
 
 
 class User(AbstractUser):
@@ -32,7 +42,22 @@ class User(AbstractUser):
         'Пользовательская роль',
         max_length=24,
         choices=CHOICES,
-        default='user',
+        default=USER,
+    )
+    username = models.CharField(
+        'Username',
+        max_length=150,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+\Z',
+                message='Нельзя использовать "me" в качестве имени.',
+            ),
+            validate_exclude_me,
+        ],
+        error_messages={
+            'unique': 'пользователь с таки именем уже существует',
+        },
     )
 
     class Meta:
@@ -40,22 +65,24 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.is_staff or self.role == settings.ADMIN
+        return self.is_staff or self.role == ADMIN
 
     @property
     def is_moderator(self):
-        return self.role == settings.MODERATOR
+        return self.role == MODERATOR
+
+    '''@property
+    def is_superuser(self):
+        return self.is_staff and self.role == ADMIN'''
 
 
 class Category(models.Model):
     """ Модель категории произведения"""
     name = models.CharField(
-        blank=False,
         default='Category',
         max_length=256
     )
     slug = models.SlugField(
-        blank=False,
         max_length=50,
         unique=True
     )
@@ -67,12 +94,10 @@ class Category(models.Model):
 class Genre(models.Model):
     """ Модель жанра произведения"""
     name = models.CharField(
-        blank=False,
         default='Genre',
         max_length=256
     )
     slug = models.SlugField(
-        blank=False,
         max_length=50,
         unique=True
     )
@@ -84,12 +109,9 @@ class Genre(models.Model):
 class Title(models.Model):
     """ Модель произведения"""
     name = models.CharField(
-        blank=False,
         max_length=256
     )
-    year = models.IntegerField(
-        blank=False
-    )
+    year = models.IntegerField()
     description = models.TextField()
     category = models.ForeignKey(
         Category,
@@ -129,8 +151,6 @@ class Review(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        null=False,
-        blank=False,
         related_name='reviews',
         verbose_name='Автор отзыва',
         help_text='Выберите автора этого отзыва.'

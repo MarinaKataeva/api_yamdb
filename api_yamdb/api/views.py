@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
@@ -11,7 +13,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from api.mixins import CreateListDeleteViewSet
 from api.permissions import (
     IsAdminOnlyPermission,
-    IsUserOnlyPermission,
     IsAdminOrReadOnlyPermission,
     IsAuthorModeratorAdminOrReadOnlyPermission
 )
@@ -42,15 +43,14 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=['get', 'patch'],
         detail=False,
         url_path='me',
-        permission_classes=(IsUserOnlyPermission,)
-    )
+        permission_classes=[permissions.IsAuthenticated])
     def me_user(self, request):
         if request.method == 'GET':
-            user = User.objects.get(username=request.user)
+            user = request.user
             serializer = self.get_serializer(user)
             return Response(serializer.data)
 
-        user = User.objects.get(username=request.user)
+        user = request.user
         serializer = RoleSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -70,29 +70,27 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         username = request.data.get('username')
         email = request.data.get('email')
 
-        user_exists = User.objects.filter(username=username, email=email)
+        user_exists = User.objects.filter(
+            username=username, email=email).exists()
         if user_exists:
             user = User.objects.get(username=username)
             serializer = RegistrationSerializer(user, data=request.data)
         else:
             serializer = RegistrationSerializer(data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            user = User.objects.get(username=username)
-            code = user.confirmation_code
-            send_mail(
-                f'{user.username}, Вас приветствует команда YaMDb! ',
-                f'Это Ваш уникальный код: {code} '
-                f'Перейдите по адресу api/v1/auth/token/'
-                f'для получения токена',
-                'yamdb@yyamdb.ru',
-                [email],
-                fail_silently=False,
-            )
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        code = user.confirmation_code
+        send_mail(
+            f'{user.username}, Вас приветствует команда YaMDb! ',
+            f'Это Ваш уникальный код: {code} '
+            f'Перейдите по адресу api/v1/auth/token/'
+            f'для получения токена',
+            settings.DEFAULT_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TokenViewSet(viewsets.ModelViewSet):
@@ -103,14 +101,14 @@ class TokenViewSet(viewsets.ModelViewSet):
 
     def create(self, request):
         serializer = UserTokenSerializer(data=request.data)
-        if serializer.is_valid():
-            username = request.data.get('username')
-            confirmation_code = request.data.get('confirmation_code')
-            user = get_object_or_404(User, username=username)
-            if str(user.confirmation_code) == confirmation_code:
-                refresh = RefreshToken.for_user(user)
-                token = {'token': str(refresh.access_token)}
-                return Response(token, status=status.HTTP_200_OK)
+        serializer.is_valid(raise_exception=True)
+        username = request.data.get('username')
+        user = get_object_or_404(User, username=username)
+        confirmation_code = default_token_generator.make_token(user)
+        if str(user.confirmation_code) == confirmation_code:
+            refresh = RefreshToken.for_user(user)
+            token = {'token': str(refresh.access_token)}
+            return Response(token, status=status.HTTP_200_OK)
         return Response(
             'Проверьте confirmation_code', status=status.HTTP_400_BAD_REQUEST
         )

@@ -1,16 +1,6 @@
 from rest_framework import permissions
 
 
-class IsUserOnlyPermission(permissions.BasePermission):
-    """Обеспечивает доступ к users/me только самим пользователям."""
-
-    def has_permission(self, request, view):
-        return request.user.is_authenticated
-
-    def has_object_permission(self, request, view, obj):
-        return obj == request.user
-
-
 class IsAuthorModeratorAdminOrReadOnlyPermission(permissions.BasePermission):
     """
     Обеспечивает доступ автору, модератору и админу.
