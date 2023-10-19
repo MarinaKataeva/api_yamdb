@@ -65,15 +65,13 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.is_staff or self.role == ADMIN
+        return any(
+            [self.role == ADMIN, self.is_superuser, self.is_staff]
+        )
 
     @property
     def is_moderator(self):
         return self.role == MODERATOR
-
-    '''@property
-    def is_superuser(self):
-        return self.is_staff and self.role == ADMIN'''
 
 
 class Category(models.Model):
