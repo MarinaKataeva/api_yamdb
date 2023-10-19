@@ -1,10 +1,6 @@
-from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
-
 
 from reviews.models import (Category,
                             Comment,
@@ -18,7 +14,6 @@ MIN_SCORE = 1
 MAX_SCORE = 10
 
 
-
 class UserSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели User.
@@ -30,68 +25,23 @@ class UserSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
 
-    def validate_username(self, username):
-        """
-        Проверка, что username не равен "me".
-        """
-        if username in 'me':
-            raise serializers.ValidationError(
-                'Запрещено использовать me в качестве имени пользователя'
-            )
-        return username
-
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """
     Сериализатор регистрации пользователя.
     """
 
-    class Meta:
-        model = User
-        fields = ('email', 'username')
-
-    def validate(self, data):
-        if data.get('username') == 'me':
-            raise serializers.ValidationError(
-                'Запрещено использовать me в качестве имени'
-            )
-        if User.objects.filter(username=data.get('username')):
-            raise serializers.ValidationError(
-                'Пользователь с таким именем уже существует'
-            )
-        if User.objects.filter(email=data.get('email')):
-            raise serializers.ValidationError(
-                'Пользователь с таким email уже существует'
-            )
-        return data
-
-
-class CustomSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         max_length=254, required=True,
         validators=[UniqueValidator(queryset=User.objects.all())])
 
     class Meta:
         model = User
-        fields = ('email', 'username')
+        fields = ('username', 'email')
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
         }
-        validators = [
-            serializers.UniqueTogetherValidator(
-                queryset=model.objects.all(),
-                fields=('email', 'username'),
-                message="Логин и email должны быть уникальными"
-            )
-        ]
-
-    def validate_username(self, username):
-        if username == 'me':
-            raise ValidationError(
-                'Запрещено использовать me в качестве имени пользователя'
-            )
-        return username
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -109,7 +59,7 @@ class UserTokenSerializer(serializers.ModelSerializer):
     Сериализатор для токена.
     """
     username = serializers.CharField(
-        max_length=50, validators=[UnicodeUsernameValidator, ]
+        max_length=50
     )
     confirmation_code = serializers.CharField()
 
@@ -144,23 +94,11 @@ class TitleSerializer(serializers.ModelSerializer):
     """ Сериализатор для чтения произведения"""
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
-    rating = serializers.SerializerMethodField()
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
-        fields = (
-            'id',
-            'name',
-            'year',
-            'rating',
-            'description',
-            'genre',
-            'category'
-        )
-
-    def get_rating(self, obj):
-        rating = obj.reviews.aggregate(Avg('score'))['score__avg']
-        return round(rating, 2) if rating else None
+        fields = '__all__'
 
 
 class TitlePostPatchSerializer(serializers.ModelSerializer):
@@ -248,4 +186,3 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
-
