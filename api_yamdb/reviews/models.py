@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 USER = 'user'
 MODERATOR = 'moderator'
@@ -20,6 +21,13 @@ CHOICES = (
 def validate_exclude_me(value):
     if value.lower() == "me":
         raise ValidationError('Нельзя использовать "me" в качестве имени.')
+
+
+def year_validator(value):
+    if value > timezone.now().year:
+        raise ValidationError(
+            'Пожалуйста, введите корректный год!'
+        )
 
 
 class User(AbstractUser):
@@ -109,12 +117,18 @@ class Title(models.Model):
     name = models.CharField(
         max_length=256
     )
-    year = models.IntegerField()
+    year = models.IntegerField(
+        validators=[year_validator],
+        null=True,
+        blank=True
+    )
     description = models.TextField()
     category = models.ForeignKey(
         Category,
-        on_delete=models.CASCADE,
-        related_name='category_titles'
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='category_titles',
     )
     genre = models.ManyToManyField(
         Genre,
