@@ -1,7 +1,8 @@
+from django.db.models import Avg
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import rest_framework
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -115,6 +116,7 @@ class TokenViewSet(viewsets.ModelViewSet):
 
 
 class CategoryViewSet(CreateListDeleteViewSet):
+    """ Вьюсет категоргии произведения """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     pagination_class = LimitOffsetPagination
@@ -125,6 +127,7 @@ class CategoryViewSet(CreateListDeleteViewSet):
 
 
 class GenreViewSet(CreateListDeleteViewSet):
+    """ Вьюсет жанра произведения """
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
@@ -133,10 +136,23 @@ class GenreViewSet(CreateListDeleteViewSet):
     permission_classes = [IsAdminOrReadOnlyPermission, ]
 
 
+class TitleFilter(rest_framework.FilterSet):
+    """ Фильтрсет для фильтрации по связанным моделям категории и жанра"""
+    category = rest_framework.CharFilter(field_name='category__slug')
+    genre = rest_framework.CharFilter(field_name='genre__slug')
+
+    class Meta:
+        model = Title
+        fields = ['year', 'name', 'category', 'genre']
+
+
 class TitleViewSet(viewsets.ModelViewSet):
-    pagination_class = LimitOffsetPagination
-    filter_backends = (DjangoFilterBackend,)
+    """ Вьюсет произведения """
+    queryset = Title.objects.annotate(rating=Avg('reviews__score'))
     permission_classes = [IsAdminOrReadOnlyPermission, ]
+    pagination_class = LimitOffsetPagination
+    filter_backends = (rest_framework.DjangoFilterBackend,)
+    filterset_class = TitleFilter
 
     def get_serializer_class(self):
         if self.request.method == 'PUT':
@@ -144,24 +160,6 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.request.method in ['POST', 'PATCH']:
             return TitlePostPatchSerializer
         return TitleSerializer
-
-    def get_queryset(self):
-        genre_slug = self.request.query_params.get('genre')
-        category_slug = self.request.query_params.get('category')
-        year = self.request.query_params.get('year')
-        name = self.request.query_params.get('name')
-        if genre_slug:
-            genre = get_object_or_404(Genre, slug=genre_slug)
-            return genre.genre_titles.all()
-        if category_slug:
-            category = get_object_or_404(Category, slug=category_slug)
-            return category.category_titles.all()
-        if year:
-            return Title.objects.filter(year=year)
-        if name:
-            return Title.objects.filter(name=name)
-        else:
-            return Title.objects.all()
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
