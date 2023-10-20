@@ -17,6 +17,7 @@ from api.permissions import (
     IsAdminOrReadOnlyPermission,
     IsAuthorModeratorAdminOrReadOnlyPermission
 )
+from api.filters import TitleFilter
 from api.serializers import (RoleSerializer, UserSerializer,
                              RegistrationSerializer, UserTokenSerializer,
                              CategorySerializer, CommentSerializer,
@@ -53,10 +54,9 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = RoleSerializer(
             request.user, data=request.data, partial=True
         )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -71,10 +71,8 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         username = request.data.get('username')
         email = request.data.get('email')
 
-        user_exists = User.objects.filter(
-            username=username, email=email).exists()
-        if user_exists:
-            user = User.objects.get(username=username)
+        user = User.objects.filter(username=username, email=email).first()
+        if user:
             serializer = RegistrationSerializer(user, data=request.data)
         else:
             serializer = RegistrationSerializer(data=request.data)
@@ -134,16 +132,6 @@ class GenreViewSet(CreateListDeleteViewSet):
     search_fields = ('name',)
     lookup_field = 'slug'
     permission_classes = [IsAdminOrReadOnlyPermission, ]
-
-
-class TitleFilter(rest_framework.FilterSet):
-    """ Фильтрсет для фильтрации по связанным моделям категории и жанра"""
-    category = rest_framework.CharFilter(field_name='category__slug')
-    genre = rest_framework.CharFilter(field_name='genre__slug')
-
-    class Meta:
-        model = Title
-        fields = ['year', 'name', 'category', 'genre']
 
 
 class TitleViewSet(viewsets.ModelViewSet):

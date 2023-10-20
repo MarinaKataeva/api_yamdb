@@ -1,8 +1,8 @@
 import uuid
+import re
 
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -12,14 +12,14 @@ MODERATOR = 'moderator'
 ADMIN = 'admin'
 
 CHOICES = (
-    ('user', 'Пользователь'),
-    ('moderator', 'Модератор'),
-    ('admin', 'Администратор'),
+    (USER, 'Пользователь'),
+    (MODERATOR, 'Модератор'),
+    (ADMIN, 'Администратор'),
 )
 
 
 def validate_exclude_me(value):
-    if value.lower() == "me":
+    if value.lower() == "me" or not re.match(r'^[\w.@+-]+\Z', value):
         raise ValidationError('Нельзя использовать "me" в качестве имени.')
 
 
@@ -57,14 +57,10 @@ class User(AbstractUser):
         max_length=150,
         unique=True,
         validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+\Z',
-                message='Нельзя использовать "me" в качестве имени.',
-            ),
             validate_exclude_me,
         ],
         error_messages={
-            'unique': 'пользователь с таки именем уже существует',
+            'unique': 'пользователь с таким именем уже существует',
         },
     )
 
