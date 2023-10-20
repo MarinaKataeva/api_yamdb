@@ -3,6 +3,7 @@ import re
 
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
