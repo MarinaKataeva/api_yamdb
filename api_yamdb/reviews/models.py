@@ -117,7 +117,7 @@ class Title(models.Model):
     name = models.CharField(
         max_length=256
     )
-    year = models.IntegerField(
+    year = models.PositiveSmallIntegerField(
         validators=[year_validator],
         null=True,
         blank=True
@@ -134,9 +134,6 @@ class Title(models.Model):
         Genre,
         related_name='genre_titles',
         through='GenreTitle'
-    )
-    rating = models.IntegerField(
-        default=0
     )
 
     def __str__(self):
